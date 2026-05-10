@@ -1,0 +1,101 @@
+﻿node.exe : 
+C:\Users\rounak upadhyay
+\Desktop\sanjeevni\apps\
+server\node_modules\ts-n
+ode\src\index.ts:859
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo      
+        : NotSpecified  
+  : (C:\Users\rounak.   
+ ..rc\index.ts:859:S    
+tring) [], RemoteEx    
+ception
+    + FullyQualifiedErr 
+   orId : NativeComman  
+  dError
+ 
+    return new 
+TSError(diagnosticText, 
+diagnosticCodes, 
+diagnostics);
+           ^
+TSError: Γ¿» Unable to 
+compile TypeScript:
+src/index.ts(7,26): 
+error TS7016: Could not 
+find a declaration file 
+for module 
+'cookie-parser'. 
+'C:/Users/rounak upadhya
+y/Desktop/sanjeevni/apps
+/server/node_modules/coo
+kie-parser/index.js' 
+implicitly has an 'any' 
+type.
+  Try `npm i --save-dev 
+@types/cookie-parser` 
+if it exists or add a 
+new declaration (.d.ts) 
+file containing 
+`declare module 
+'cookie-parser';`
+
+    at createTSError 
+(C:\Users\rounak upadhya
+y\Desktop\sanjeevni\apps
+\server\node_modules\ts-
+node\src\index.ts:859:12
+)
+    at reportTSError 
+(C:\Users\rounak upadhya
+y\Desktop\sanjeevni\apps
+\server\node_modules\ts-
+node\src\index.ts:863:19
+)
+    at getOutput 
+(C:\Users\rounak upadhya
+y\Desktop\sanjeevni\apps
+\server\node_modules\ts-
+node\src\index.ts:1077:3
+6)
+    at Object.compile 
+(C:\Users\rounak upadhya
+y\Desktop\sanjeevni\apps
+\server\node_modules\ts-
+node\src\index.ts:1433:4
+1)
+    at 
+Module.m._compile 
+(C:\Users\rounak upadhya
+y\Desktop\sanjeevni\apps
+\server\node_modules\ts-
+node\src\index.ts:1617:3
+0)
+    at node:internal/mod
+ules/cjs/loader:1893:10
+    at Object.require.ex
+tensions.<computed> [as 
+.ts] (C:\Users\rounak up
+adhyay\Desktop\sanjeevni
+\apps\server\node_module
+s\ts-node\src\index.ts:1
+621:12)
+    at Module.load (node
+:internal/modules/cjs/lo
+ader:1481:32)
+    at Module._load (nod
+e:internal/modules/cjs/l
+oader:1300:12)
+    at TracingChannel.tr
+aceSync (node:diagnostic
+s_channel:328:14) {
+  diagnosticCodes: [ 
+7016 ]
+}
