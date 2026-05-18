@@ -33,11 +33,20 @@ export const metadata: Metadata = {
 }
 
 import AuthInitializer from '@/components/AuthInitializer'
+import { LanguageProvider } from '@/context/LanguageContext'
+
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${plusJakarta.variable} ${dmSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#0A3D6B" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <script dangerouslySetInnerHTML={{ __html: `if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('/sw.js')});}` }} />
+      </head>
       <body style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+        <LanguageProvider>
         <AuthInitializer>
           {children}
         </AuthInitializer>
@@ -68,6 +77,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             animationDelay: '0.7s',
           }} />
         </a>
+        </LanguageProvider>
       </body>
     </html>
   )
