@@ -42,11 +42,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
             try {
-              var pref = localStorage.getItem('theme');
-              if (pref === 'dark') {
+              var theme = localStorage.getItem('theme');
+              if (theme === 'dark') {
                 document.documentElement.classList.add('dark-mode');
-              } else if (pref === 'light') {
-                document.documentElement.classList.add('light-mode');
               }
             } catch (e) {}
           })();

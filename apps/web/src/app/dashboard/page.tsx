@@ -144,8 +144,26 @@ function Sidebar({ active }: { active: string }) {
 /* ── Top Bar ── */
 function TopBar() {
     const [notifOpen, setNotifOpen] = useState(false)
+    const [isDark, setIsDark] = useState(false)
     const { user } = useAuthStore()
     const initials = user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '?'
+
+    useEffect(() => {
+        setIsDark(document.documentElement.classList.contains('dark-mode'))
+    }, [])
+
+    const toggleDarkMode = () => {
+        const html = document.documentElement
+        if (html.classList.contains('dark-mode')) {
+            html.classList.remove('dark-mode')
+            localStorage.setItem('theme', 'light')
+            setIsDark(false)
+        } else {
+            html.classList.add('dark-mode')
+            localStorage.setItem('theme', 'dark')
+            setIsDark(true)
+        }
+    }
 
     return (
         <div style={{ height: '64px', background: 'white', borderBottom: '1px solid #E8EFF7', display: 'flex', alignItems: 'center', gap: '16px', padding: '0 28px', position: 'sticky', top: 0, zIndex: 90 }}>
@@ -191,6 +209,21 @@ function TopBar() {
                     </AnimatePresence>
                 </div>
 
+                {/* Dark Mode Toggle */}
+                <button
+                    onClick={toggleDarkMode}
+                    title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                    style={{
+                        width: '40px', height: '40px', borderRadius: '10px', background: '#F5F7FA',
+                        border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', fontSize: '18px', transition: 'background 0.2s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#E8EFF7')}
+                    onMouseLeave={e => (e.currentTarget.style.background = '#F5F7FA')}
+                >
+                    {isDark ? '☀️' : '🌙'}
+                </button>
+
                 {/* SOS */}
                 <a href="/emergency" style={{
                     padding: '8px 16px', borderRadius: '10px', fontWeight: 700, fontSize: '13px',
@@ -209,6 +242,7 @@ function TopBar() {
         </div>
     )
 }
+
 
 export default function DashboardPage() {
     const { user } = useAuthStore()
