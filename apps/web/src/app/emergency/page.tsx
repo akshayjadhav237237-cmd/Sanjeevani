@@ -27,7 +27,30 @@ export default function EmergencyPage() {
     const startSOS = () => {
         setStep(1)
         setLocating(true)
+
+        // Capture geolocation then send WhatsApp alert
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude.toFixed(5)
+                    const lng = pos.coords.longitude.toFixed(5)
+                    const msg = encodeURIComponent(`🚨 EMERGENCY ALERT from Sanjeevani! I need immediate help. My location: https://www.google.com/maps?q=${lat},${lng} — Please call emergency services immediately!`)
+                    window.open(`https://wa.me/?text=${msg}`, '_blank')
+                },
+                () => {
+                    // fallback without coords
+                    const msg = encodeURIComponent(`🚨 EMERGENCY ALERT from Sanjeevani! I need immediate help. Please call emergency services immediately!`)
+                    window.open(`https://wa.me/?text=${msg}`, '_blank')
+                }
+            )
+        }
+
         setTimeout(() => { setLocating(false); setStep(2) }, 2500)
+    }
+
+    const shareSMS = () => {
+        const msg = encodeURIComponent(`🚨 EMERGENCY ALERT from Sanjeevani! I need immediate help. Please call emergency services immediately!`)
+        window.open(`sms:?body=${msg}`, '_blank')
     }
 
     return (
@@ -65,6 +88,9 @@ export default function EmergencyPage() {
                             </button>
                         </div>
                         <p style={{ color: '#4A5568', fontSize: '14px', fontWeight: 600 }}>PRESS FOR EMERGENCY</p>
+                        <button onClick={shareSMS} style={{ marginTop: '16px', padding: '10px 24px', borderRadius: '12px', background: '#E3F2FD', color: '#0A3D6B', fontWeight: 700, fontSize: '13px', border: '1.5px solid #1976D2', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', margin: '16px auto 0' }}>
+                            📱 Share via SMS
+                        </button>
 
                         {/* First aid cards */}
                         <div style={{ marginTop: '48px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
@@ -293,6 +319,13 @@ export default function EmergencyPage() {
                                     color: 'white', fontSize: '13px', fontWeight: 700, textDecoration: 'none', backdropFilter: 'blur(10px)',
                                 }}>{c.label}</a>
                             ))}
+                            {step === 5 && (
+                                <a href="/ambulance" style={{
+                                    padding: '10px 20px', borderRadius: '12px', background: 'rgba(0,200,83,0.3)',
+                                    color: 'white', fontSize: '13px', fontWeight: 700, textDecoration: 'none', backdropFilter: 'blur(10px)',
+                                    border: '1px solid rgba(0,200,83,0.5)',
+                                }}>🗺️ Track Ambulance</a>
+                            )}
                         </div>
                     )}
                 </div>
