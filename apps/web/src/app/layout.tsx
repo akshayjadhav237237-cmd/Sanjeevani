@@ -33,25 +33,11 @@ export const metadata: Metadata = {
 }
 
 import AuthInitializer from '@/components/AuthInitializer'
-import { Navbar } from '@/components/layout/Navbar'
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${plusJakarta.variable} ${dmSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function() {
-            try {
-              var theme = localStorage.getItem('theme');
-              if (theme === 'dark') {
-                document.documentElement.classList.add('dark-mode');
-              }
-            } catch (e) {}
-          })();
-        `}} />
-      </head>
       <body style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
-        <Navbar />
         <AuthInitializer>
           {children}
         </AuthInitializer>
@@ -86,5 +72,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   )
 }
- 
-// End of RootLayout
