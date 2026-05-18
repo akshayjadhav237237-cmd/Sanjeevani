@@ -138,20 +138,41 @@ export default function AIAssistantPage() {
         setTyping(true)
 
         try {
-            const res = await axios.post('http://localhost:5001/api/ai/chat', {
-                message: text,
-                history: messages.filter(m => m.type === 'text').map(m => ({
-                    role: m.role === 'ai' ? 'assistant' : 'user',
-                    content: m.content
-                }))
-            })
-            setMessages(prev => [...prev, { role: 'ai', type: 'text', content: res.data.message }])
+            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${process.env.NEXT_PUBLIC_GROQ_API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: "llama-3.1-8b-instant",
+                    messages: [
+                        {
+                            role: "system",
+                            content: "You are a helpful healthcare assistant. Answer health-related questions clearly and concisely."
+                        },
+                        ...messages.filter(m => m.type === 'text').map(m => ({
+                            role: m.role === 'ai' ? 'assistant' : 'user',
+                            content: m.content
+                        })),
+                        {
+                            role: "user",
+                            content: text
+                        }
+                    ],
+                    max_tokens: 500
+                })
+            });
+
+            const data = await response.json();
+            const reply = data.choices[0].message.content;
+            setMessages(prev => [...prev, { role: 'ai', type: 'text', content: reply }])
         } catch (err) {
             console.error('AI Chat Error:', err)
             setMessages(prev => [...prev, { 
                 role: 'ai', 
                 type: 'text', 
-                content: "I'm sorry, I'm having trouble connecting to the Sanjeevani servers. Please check if the backend is running or try again later." 
+                content: "I'm sorry, I'm having trouble connecting to the AI service. Please check your API key or try again later." 
             }])
         } finally {
             setTyping(false)
