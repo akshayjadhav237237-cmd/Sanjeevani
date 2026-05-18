@@ -37,6 +37,20 @@ import AuthInitializer from '@/components/AuthInitializer'
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${plusJakarta.variable} ${dmSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            try {
+              var pref = localStorage.getItem('theme');
+              if (pref === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+              } else if (pref === 'light') {
+                document.documentElement.classList.add('light-mode');
+              }
+            } catch (e) {}
+          })();
+        `}} />
+      </head>
       <body style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
         <AuthInitializer>
           {children}
