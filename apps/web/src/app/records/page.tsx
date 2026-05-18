@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { FileText, Search, Upload, Download, Share2, Eye, Plus, ArrowLeft, ChevronRight, Activity, Pill, Shield, Syringe } from 'lucide-react'
+import { FileText, Search, Upload, Download, Share2, Eye, Plus, ArrowLeft, ChevronRight, Activity, Pill, Shield, Syringe, X, Loader } from 'lucide-react'
 
 const TABS = ['Medical History', 'Lab Reports', 'Prescriptions', 'Vaccinations', 'Documents']
 
@@ -38,8 +38,116 @@ const VACCINATIONS = [
 export default function RecordsPage() {
     const [activeTab, setActiveTab] = useState(0)
     const [searching, setSearching] = useState('')
+    const [scanModal, setScanModal] = useState(false)
+    const [scanLoading, setScanLoading] = useState(false)
+    const [scanResult, setScanResult] = useState<any>(null)
+    const [scanError, setScanError] = useState('')
+    const fileInputRef = useRef<HTMLInputElement>(null)
+
+    const handleScanFile = async (file: File) => {
+        setScanLoading(true)
+        setScanError('')
+        setScanResult(null)
+        try {
+            const base64 = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader()
+                reader.onload = () => resolve((reader.result as string).split(',')[1])
+                reader.onerror = reject
+                reader.readAsDataURL(file)
+            })
+            const prompt = `The user uploaded a health report named "${file.name}". Analyze it and extract key medical information.`
+            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_GROQ_API_KEY}` },
+                body: JSON.stringify({
+                    model: 'llama-3.1-8b-instant',
+                    max_tokens: 1000,
+                    messages: [
+                        { role: 'system', content: 'You are a medical report analyzer. Extract and explain: key values found, what is normal vs abnormal, overall health summary, and recommended next steps. Return ONLY valid JSON: { "summary": string, "keyValues": [{"name": string, "value": string, "status": "normal"|"abnormal"|"borderline"}], "recommendations": string[] }' },
+                        { role: 'user', content: `${prompt}\n\nFile content (base64 snippet for reference): ${base64.substring(0, 200)}` }
+                    ]
+                })
+            })
+            const data = await res.json()
+            const content = data.choices[0].message.content
+            const json = JSON.parse(content.replace(/```json\n?|\n?```/g, '').trim())
+            setScanResult(json)
+        } catch (e) {
+            setScanError('Failed to analyze report. Please try again.')
+        } finally {
+            setScanLoading(false)
+        }
+    }
+
 
     return (
+        <>
+        {/* Scan Report Modal */}
+        <AnimatePresence>
+            {scanModal && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+                    <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
+                        style={{ background: 'white', borderRadius: '20px', padding: '28px', maxWidth: '520px', width: '100%', maxHeight: '80vh', overflowY: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                            <h2 style={{ fontFamily: 'var(--font-jakarta, sans-serif)', fontWeight: 800, fontSize: '18px', color: '#1A2332' }}>🔬 Scan Health Report</h2>
+                            <button onClick={() => { setScanModal(false); setScanResult(null); setScanError('') }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={22} color="#4A5568" /></button>
+                        </div>
+                        <input ref={fileInputRef} type="file" accept="image/*,application/pdf" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) handleScanFile(f) }} />
+                        {!scanResult && !scanLoading && (
+                            <div onClick={() => fileInputRef.current?.click()}
+                                style={{ border: '2px dashed #1976D2', borderRadius: '16px', padding: '40px', textAlign: 'center', cursor: 'pointer', background: '#F0F7FF' }}>
+                                <div style={{ fontSize: '48px', marginBottom: '12px' }}>📄</div>
+                                <p style={{ fontWeight: 700, color: '#0A3D6B', fontSize: '15px', marginBottom: '4px' }}>Click to upload report</p>
+                                <p style={{ fontSize: '13px', color: '#4A5568' }}>Supports PDF, JPEG, PNG</p>
+                            </div>
+                        )}
+                        {scanLoading && (
+                            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                                <Loader size={32} color="#1976D2" style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+                                <p style={{ color: '#1976D2', fontWeight: 600 }}>AI is analyzing your report...</p>
+                            </div>
+                        )}
+                        {scanError && <p style={{ color: '#D32F2F', fontSize: '14px', fontWeight: 600, textAlign: 'center', padding: '16px 0' }}>{scanError}</p>}
+                        {scanResult && (
+                            <div>
+                                <div style={{ background: '#E3F2FD', borderRadius: '12px', padding: '16px', marginBottom: '16px' }}>
+                                    <p style={{ fontWeight: 700, color: '#0A3D6B', fontSize: '14px', marginBottom: '6px' }}>📋 Summary</p>
+                                    <p style={{ color: '#1A2332', fontSize: '13px', lineHeight: 1.6 }}>{scanResult.summary}</p>
+                                </div>
+                                {scanResult.keyValues?.length > 0 && (
+                                    <div style={{ marginBottom: '16px' }}>
+                                        <p style={{ fontWeight: 700, color: '#1A2332', fontSize: '13px', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Key Values</p>
+                                        {scanResult.keyValues.map((kv: any, i: number) => {
+                                            const statusColor = kv.status === 'normal' ? '#00C853' : kv.status === 'abnormal' ? '#D32F2F' : '#F59E0B'
+                                            const statusBg = kv.status === 'normal' ? '#E8F5E9' : kv.status === 'abnormal' ? '#FFEBEE' : '#FFF8E1'
+                                            return (
+                                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: statusBg, borderRadius: '8px', marginBottom: '6px' }}>
+                                                    <span style={{ fontSize: '13px', color: '#1A2332', fontWeight: 500 }}>{kv.name}</span>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <span style={{ fontSize: '13px', fontWeight: 700, color: '#1A2332' }}>{kv.value}</span>
+                                                        <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px', background: statusColor + '20', color: statusColor }}>{kv.status}</span>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                                {scanResult.recommendations?.length > 0 && (
+                                    <div style={{ background: '#F0F7FF', borderRadius: '12px', padding: '16px' }}>
+                                        <p style={{ fontWeight: 700, color: '#0A3D6B', fontSize: '13px', marginBottom: '8px' }}>💡 Recommendations</p>
+                                        {scanResult.recommendations.map((r: string, i: number) => (
+                                            <p key={i} style={{ fontSize: '13px', color: '#1A2332', marginBottom: '4px' }}>• {r}</p>
+                                        ))}
+                                    </div>
+                                )}
+                                <button onClick={() => { setScanResult(null); fileInputRef.current && (fileInputRef.current.value = '') }} style={{ marginTop: '16px', width: '100%', padding: '12px', borderRadius: '10px', background: '#F0F4F8', color: '#1A2332', fontWeight: 700, fontSize: '14px', border: 'none', cursor: 'pointer' }}>Scan Another Report</button>
+                            </div>
+                        )}
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
         <div style={{ minHeight: '100vh', background: '#F7FAFD' }}>
             {/* Header */}
             <div style={{ background: 'linear-gradient(135deg, #0A3D6B, #1976D2)', padding: '28px 0' }}>
@@ -51,8 +159,8 @@ export default function RecordsPage() {
                         <h1 style={{ fontFamily: 'var(--font-jakarta, sans-serif)', color: 'white', fontSize: '22px', fontWeight: 800 }}>Health Records</h1>
                         <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '13px' }}>Your complete medical history — secure & accessible</p>
                     </div>
-                    <button style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '12px', background: 'rgba(255,255,255,0.15)', color: 'white', fontWeight: 700, fontSize: '13px', border: '1px solid rgba(255,255,255,0.3)', cursor: 'pointer', backdropFilter: 'blur(10px)' }}>
-                        <Upload size={15} /> Upload Report
+                    <button onClick={() => setScanModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px', borderRadius: '12px', background: 'rgba(255,255,255,0.15)', color: 'white', fontWeight: 700, fontSize: '13px', border: '1px solid rgba(255,255,255,0.3)', cursor: 'pointer', backdropFilter: 'blur(10px)' }}>
+                        🔬 Scan Report
                     </button>
                 </div>
             </div>
@@ -226,5 +334,6 @@ export default function RecordsPage() {
                 </AnimatePresence>
             </div>
         </div>
+        </>
     )
 }
