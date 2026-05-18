@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useRouter } from 'next/navigation'
+import { useLanguage } from '@/context/LanguageContext'
 
 /* ── Health Score Ring ── */
 function HealthScoreRing({ score = 0 }: { score?: number }) {
@@ -57,17 +58,18 @@ function HealthScoreRing({ score = 0 }: { score?: number }) {
 function Sidebar({ active }: { active: string }) {
     const { user, logout } = useAuthStore()
     const router = useRouter()
+    const { t, lang, toggleLang } = useLanguage()
     const navItems = [
-        { label: 'Dashboard', icon: Home, href: '/dashboard' },
-        { label: 'Find Hospitals', icon: Hospital, href: '/search' },
-        { label: 'My Bookings', icon: Calendar, href: '/booking' },
-        { label: 'Health Records', icon: FileText, href: '/records' },
-        { label: 'Medicines', icon: Pill, href: '/medicines' },
-        { label: 'AI Assistant', icon: Brain, href: '/ai-assistant' },
-        { label: 'Appointments', icon: Clock, href: '/appointments' },
-        { label: 'Emergency', icon: AlertCircle, href: '/emergency' },
-        { label: 'Insurance', icon: Shield, href: '/insurance' },
-        { label: 'Settings', icon: Settings, href: '/profile' },
+        { label: t('dashboard'), icon: Home, href: '/dashboard' },
+        { label: t('findHospital'), icon: Hospital, href: '/hospitals' },
+        { label: t('myBookings'), icon: Calendar, href: '/booking' },
+        { label: t('healthRecords'), icon: FileText, href: '/records' },
+        { label: t('medicines'), icon: Pill, href: '/medicines' },
+        { label: t('aiAssistant'), icon: Brain, href: '/ai-assistant' },
+        { label: t('appointments'), icon: Clock, href: '/appointments' },
+        { label: t('emergency'), icon: AlertCircle, href: '/emergency' },
+        { label: t('insurance'), icon: Shield, href: '/insurance' },
+        { label: t('settings'), icon: Settings, href: '/profile' },
     ]
 
     const initials = user?.name
@@ -78,6 +80,7 @@ function Sidebar({ active }: { active: string }) {
     const scoreColor = score >= 80 ? '#00C853' : score >= 50 ? '#F59E0B' : '#D32F2F'
 
     const handleLogout = () => { logout(); router.push('/login') }
+
 
     return (
         <div style={{
@@ -215,9 +218,10 @@ function TopBar() {
 
 export default function DashboardPage() {
     const { user } = useAuthStore()
+    const { t } = useLanguage()
     const now = new Date()
     const hour = now.getHours()
-    const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening'
+    const greeting = hour < 12 ? t('goodMorning') : hour < 17 ? t('goodAfternoon') : t('goodEvening')
     const firstName = user?.name?.split(' ')[0] || 'there'
 
     // Formula-based health score
