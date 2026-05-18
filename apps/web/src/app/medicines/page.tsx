@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, ShoppingCart, Upload, Plus, Minus, X, ArrowLeft, Pill, Star, ChevronRight, Package, Truck, CheckCircle } from 'lucide-react'
+import { Search, ShoppingCart, Upload, Plus, Minus, X, ArrowLeft, Pill, Star, ChevronRight, Package, Truck, CheckCircle, AlertCircle, Loader } from 'lucide-react'
 
 const CATEGORIES = [
     { name: 'All', icon: '💊' }, { name: 'Diabetes', icon: '🩸' }, { name: 'Heart', icon: '🫀' },
@@ -20,6 +20,8 @@ const MEDICINES = [
 ]
 
 type CartItem = { med: typeof MEDICINES[0]; qty: number }
+type InteractionResult = { safe: boolean; interactions: { drugs: string; severity: 'mild' | 'moderate' | 'severe'; description: string }[]; recommendation: string }
+
 
 export default function MedicinesPage() {
     const [category, setCategory] = useState('All')
@@ -28,6 +30,40 @@ export default function MedicinesPage() {
     const [cartOpen, setCartOpen] = useState(false)
     const [showGeneric, setShowGeneric] = useState(false)
     const [ordered, setOrdered] = useState(false)
+
+    const [drugInputs, setDrugInputs] = useState(['', ''])
+    const [drugLoading, setDrugLoading] = useState(false)
+    const [drugResult, setDrugResult] = useState<InteractionResult | null>(null)
+    const [drugError, setDrugError] = useState('')
+
+    const addDrugInput = () => { if (drugInputs.length < 5) setDrugInputs(prev => [...prev, '']) }
+    const updateDrugInput = (i: number, val: string) => setDrugInputs(prev => prev.map((d, idx) => idx === i ? val : d))
+    const removeDrugInput = (i: number) => setDrugInputs(prev => prev.filter((_, idx) => idx !== i))
+
+    const checkInteractions = async () => {
+        const meds = drugInputs.filter(d => d.trim())
+        if (meds.length < 2) { setDrugError('Please enter at least 2 medicines.'); return }
+        setDrugLoading(true); setDrugError(''); setDrugResult(null)
+        try {
+            const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_GROQ_API_KEY}` },
+                body: JSON.stringify({
+                    model: 'llama-3.1-8b-instant', max_tokens: 1000,
+                    messages: [
+                        { role: 'system', content: 'You are a pharmacist AI. Check drug interactions and return ONLY valid JSON: { "safe": boolean, "interactions": [{"drugs": string, "severity": "mild"|"moderate"|"severe", "description": string}], "recommendation": string }' },
+                        { role: 'user', content: `Check drug interactions between: ${meds.join(', ')}` }
+                    ]
+                })
+            })
+            const data = await res.json()
+            const content = data.choices[0].message.content
+            const json = JSON.parse(content.replace(/```json\n?|\n?```/g, '').trim())
+            setDrugResult(json)
+        } catch { setDrugError('Failed to check interactions. Please try again.') }
+        finally { setDrugLoading(false) }
+    }
+
 
     const addToCart = (med: typeof MEDICINES[0]) => {
         setCart(prev => {
@@ -223,6 +259,88 @@ export default function MedicinesPage() {
                     </>
                 )}
             </AnimatePresence>
+
+            {/* Drug Interaction Checker */}
+            <div style={{ padding: '0 0 48px' }}>
+                <div className="container-xl" style={{ padding: '0 24px' }}>
+                    <div className="card" style={{ padding: '28px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'linear-gradient(135deg, #0A3D6B, #1976D2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <AlertCircle size={22} color="white" />
+                            </div>
+                            <div>
+                                <h2 style={{ fontFamily: 'var(--font-jakarta, sans-serif)', fontWeight: 800, fontSize: '18px', color: '#1A2332' }}>Drug Interaction Checker</h2>
+                                <p style={{ fontSize: '13px', color: '#4A5568' }}>Check if your medicines are safe to take together</p>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+                            {drugInputs.map((val, i) => (
+                                <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    <div style={{ flex: 1, position: 'relative' }}>
+                                        <Pill size={15} color="#9CA3AF" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                                        <input
+                                            value={val}
+                                            onChange={e => updateDrugInput(i, e.target.value)}
+                                            placeholder={`Medicine ${i + 1}${i === 0 ? ' (required)' : i === 1 ? ' (required)' : ' (optional)'}`}
+                                            className="input-field"
+                                            style={{ paddingLeft: '40px' }}
+                                        />
+                                    </div>
+                                    {i >= 2 && (
+                                        <button onClick={() => removeDrugInput(i)} style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#FFEBEE', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <X size={16} color="#D32F2F" />
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                            {drugInputs.length < 5 && (
+                                <button onClick={addDrugInput} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', borderRadius: '10px', background: '#F0F7FF', color: '#1976D2', fontWeight: 700, fontSize: '13px', border: '1.5px solid #1976D2', cursor: 'pointer' }}>
+                                    <Plus size={14} /> Add Medicine
+                                </button>
+                            )}
+                            <button onClick={checkInteractions} disabled={drugLoading} style={{ flex: 1, padding: '11px', borderRadius: '10px', background: 'linear-gradient(135deg, #0A3D6B, #1976D2)', color: 'white', fontWeight: 700, fontSize: '14px', border: 'none', cursor: drugLoading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                {drugLoading ? <><Loader size={16} style={{ animation: 'spin 1s linear infinite' }} /> Checking...</> : '🔍 Check Interactions'}
+                            </button>
+                        </div>
+
+                        {drugError && <p style={{ color: '#D32F2F', fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>⚠️ {drugError}</p>}
+
+                        {drugResult && (
+                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                                <div style={{ padding: '16px 20px', borderRadius: '12px', background: drugResult.safe ? '#E8F5E9' : '#FFEBEE', border: `1.5px solid ${drugResult.safe ? '#00C853' : '#D32F2F'}`, marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <span style={{ fontSize: '24px' }}>{drugResult.safe ? '✅' : '🚫'}</span>
+                                    <div>
+                                        <p style={{ fontWeight: 800, fontSize: '15px', color: drugResult.safe ? '#1B5E20' : '#B71C1C' }}>{drugResult.safe ? 'Safe to Take Together' : 'Dangerous Combination Detected!'}</p>
+                                        <p style={{ fontSize: '13px', color: drugResult.safe ? '#388E3C' : '#C62828', marginTop: '2px' }}>{drugResult.recommendation}</p>
+                                    </div>
+                                </div>
+                                {drugResult.interactions.length > 0 && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        <p style={{ fontWeight: 700, fontSize: '13px', color: '#1A2332', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Interactions Found</p>
+                                        {drugResult.interactions.map((inter, i) => {
+                                            const sc = inter.severity === 'severe' ? '#D32F2F' : inter.severity === 'moderate' ? '#F59E0B' : '#00897B'
+                                            const sb = inter.severity === 'severe' ? '#FFEBEE' : inter.severity === 'moderate' ? '#FFF8E1' : '#E0F2F1'
+                                            return (
+                                                <div key={i} style={{ padding: '14px 16px', borderRadius: '10px', background: sb, border: `1px solid ${sc}30` }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                                        <p style={{ fontWeight: 700, fontSize: '13px', color: '#1A2332' }}>{inter.drugs}</p>
+                                                        <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 10px', borderRadius: '999px', background: `${sc}20`, color: sc }}>{inter.severity}</span>
+                                                    </div>
+                                                    <p style={{ fontSize: '13px', color: '#4A5568', lineHeight: 1.5 }}>{inter.description}</p>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
     )
 }
