@@ -33,6 +33,7 @@ export const metadata: Metadata = {
 }
 
 import AuthInitializer from '@/components/AuthInitializer'
+import { Navbar } from '@/components/layout/Navbar'
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         `}} />
       </head>
       <body style={{ fontFamily: "var(--font-dm, 'DM Sans', sans-serif)" }}>
+        <Navbar />
         <AuthInitializer>
           {children}
         </AuthInitializer>
