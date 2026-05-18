@@ -13,25 +13,26 @@ import { useAuthStore } from '@/store/useAuthStore'
 import { useRouter } from 'next/navigation'
 
 /* ── Health Score Ring ── */
-function HealthScoreRing({ score = 87 }: { score?: number }) {
+function HealthScoreRing({ score = 0 }: { score?: number }) {
     const [current, setCurrent] = useState(0)
     const radius = 52
     const circ = 2 * Math.PI * radius
 
     useEffect(() => {
-        const t = setTimeout(() => {
-            let n = 0
-            const interval = setInterval(() => {
-                n += 2
-                setCurrent(Math.min(n, score))
-                if (n >= score) clearInterval(interval)
-            }, 25)
-            return () => clearInterval(interval)
-        }, 600)
-        return () => clearTimeout(t)
+        if (score === 0) return
+        let start: number | null = null
+        const duration = 1200
+        const animate = (ts: number) => {
+            if (!start) start = ts
+            const progress = Math.min((ts - start) / duration, 1)
+            setCurrent(Math.round(progress * score))
+            if (progress < 1) requestAnimationFrame(animate)
+        }
+        const frame = requestAnimationFrame(animate)
+        return () => cancelAnimationFrame(frame)
     }, [score])
 
-    const color = score >= 80 ? '#00C853' : score >= 50 ? '#F59E0B' : '#D32F2F'
+    const color = current >= 71 ? '#00C853' : current >= 41 ? '#F59E0B' : '#D32F2F'
     const dash = circ - (current / 100) * circ
 
     return (
@@ -40,7 +41,7 @@ function HealthScoreRing({ score = 87 }: { score?: number }) {
                 <circle cx="64" cy="64" r={radius} fill="none" stroke="#E8EFF7" strokeWidth="10" />
                 <circle cx="64" cy="64" r={radius} fill="none" stroke={color} strokeWidth="10"
                     strokeDasharray={circ} strokeDashoffset={dash} strokeLinecap="round"
-                    style={{ transition: 'stroke-dashoffset 0.05s ease' }}
+                    style={{ transition: 'stroke-dashoffset 0.03s ease' }}
                 />
             </svg>
             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -50,6 +51,7 @@ function HealthScoreRing({ score = 87 }: { score?: number }) {
         </div>
     )
 }
+
 
 /* ── Sidebar ── */
 function Sidebar({ active }: { active: string }) {
@@ -217,7 +219,20 @@ export default function DashboardPage() {
     const hour = now.getHours()
     const greeting = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening'
     const firstName = user?.name?.split(' ')[0] || 'there'
-    const healthScore = user?.healthScore || 0
+
+    // Formula-based health score
+    let healthScore = 0
+    if (user?.name && user?.dateOfBirth && user?.bloodGroup) healthScore += 30  // profile complete
+    if ((user as any)?.appointments?.length > 0) healthScore += 20              // has appointments
+    if ((user as any)?.records?.length > 0) healthScore += 20                   // has records
+    if (user?.medications && user.medications.length > 0) healthScore += 15     // has medications
+    if (user?.dateOfBirth) {
+        const age = now.getFullYear() - new Date(user.dateOfBirth).getFullYear()
+        if (age < 40) healthScore += 15                                          // age bonus
+    }
+    // fallback: use stored score if available
+    if (healthScore === 0 && user?.healthScore) healthScore = user.healthScore
+
 
     // Use user's medications if available, otherwise show placeholder
     const medications = (user?.medications?.length || 0) > 0
