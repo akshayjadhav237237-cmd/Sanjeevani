@@ -663,4 +663,4 @@ html.light-mode iframe,
 html.light-mode canvas,
 html.light-mode [style*="background-image"] {
   filter: none !important;
-}
+} 
