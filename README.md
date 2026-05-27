@@ -184,7 +184,8 @@ We welcome contributions from the open-source community!
 
 If you discover a security vulnerability within Sanjeevani, please refer to our [Security Policy](SECURITY.md) for instructions on how to responsibly disclose it.
 
-## 📄 License
+## 📄 License & Code of Conduct
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+- **License:** Distributed under the **Apache License 2.0**. See [LICENSE](LICENSE) for details.
+- **Code of Conduct:** We expect all participants to adhere to our [Code of Conduct](CODE_OF_CONDUCT.md).
  
